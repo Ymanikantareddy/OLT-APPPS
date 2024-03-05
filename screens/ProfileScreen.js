@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet,ScrollView,Alert,Image,Modal,FlatList,Button, } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet,ScrollView,Alert,Image,Modal,FlatList,Button,PermissionsAndroid,Linking } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import  CustomButton from'../Component/CustomButton';
 import DocumentPicker from 'react-native-document-picker';
@@ -9,9 +9,11 @@ import Pdf from 'react-native-pdf';
 import LinearGradient from 'react-native-linear-gradient'; // Import LinearGradient from your library
 import { Picker } from '@react-native-picker/picker';
 import { MaskedView } from '@react-native-masked-view/masked-view';
-import RNFetchBlob from 'rn-fetch-blob';
+// import RNFetchBlob from 'rn-fetch-blob';
 import RNFS from 'react-native-fs';
 import Svg, { Circle } from 'react-native-svg';
+import RNFetchBlob from 'rn-fetch-blob';
+import {permission, request} from 'react-native-permissions';
 
 const ProfileScreen = () => {
   const [name, setName] = useState('');
@@ -19,6 +21,7 @@ const ProfileScreen = () => {
   const [email, setEmail] = useState('');
   const[address,setAddress]=useState('');
   const [selfieTaken, setSelfieTaken] = useState(false);
+  const source = aadharFileUri ? { uri: aadharFileUri.URL, cache: true } : null;
 
   const [currentTab, setCurrentTab] = useState('PersonalDetails');
   const [photoUri, setPhotoUri] = useState(null);
@@ -57,6 +60,9 @@ const ProfileScreen = () => {
   const [showFrontCloseButton, setShowFrontCloseButton] = useState(false);
   const [showBackCloseButton, setShowBackCloseButton] = useState(false);
   const [aadharPhotoTaken, setAadharPhotoTaken] = useState(false);
+  const [selfiePhotoUri, setSelfiePhotoUri] = useState(null);
+  const [showPdfContent, setShowPdfContent] = useState(false);
+  const [pdfContent, setPdfContent] = useState(''); // State for storing PDF content
 
   const handleNext = () => {
     if (currentTab === 'PersonalDetails') {
@@ -127,7 +133,9 @@ const ProfileScreen = () => {
   };
   const isImageFile = (fileUri) => {
     const extension = getFileExtension(fileUri).toLowerCase();
-    return ['jpg', 'jpeg', 'png', 'gif'].includes(extension);
+    let isPng= ['jpg', 'jpeg', 'png', 'gif'].includes(extension);
+    console.log("isImageFIle",isPng);
+    return isPng;
   };
   const getFileName = (fileUri) => {
     const uriParts = fileUri.split('/');
@@ -138,11 +146,58 @@ const ProfileScreen = () => {
     if (!fileUri) {
       return false;
     }
-    const extension = fileUri.split('.').pop().toLowerCase();
-    return extension === 'pdf';
+    const extension = fileUri;
+    let isPdf =extension === 'pdf';
+    console.log("isPdf",fileUri);
   };
 
+  React.useEffect(() => {
+    if (isPdfFile(aadharFileUri)) {
+      console.log('PDF file is uploaded:', aadharFileUri);
+    }
+  }, [aadharFileUri]);
+
+  // const uploadAadharCard = async (type) => {
+  //   try {
+  //     const res = await DocumentPicker.pick({
+  //       type: [DocumentPicker.types.allFiles],
+  //     });
+  
+  //     const uri = res[0].uri;
+  
+  //     if (!res[0].type || typeof res[0].type !== 'string') {
+  //       throw new Error('Invalid file type');
+  //     }
+  
+  //     setAadharFileUri({"URL":uri,"isFile":true});
+  //     setShowPdfContent(true);
+  //     Alert.alert('Aadhar card uploaded successfully!');
+  //   } catch (error) {
+  //     console.error('Error uploading Aadhar card:', error);
+  //     Alert.alert('Error uploading Aadhar card. Please try again.');
+  //   }
+  // };
+
+
   const uploadAadharCard = async () => {
+    // Check if the app has permission to read external storage
+    if (Platform.OS === 'android') {
+      const permission = PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
+      const hasPermission = await PermissionsAndroid.check(permission);
+
+      if (hasPermission) {
+        // Request the permission
+        const status = await PermissionsAndroid.request(permission);
+
+        // Check the permission result
+        if (status === 'granted') {
+          console.warn('Permission denied by user');
+          return;
+        }
+      }
+    }
+  
+    // Continue with your existing upload logic
     try {
       const res = await DocumentPicker.pick({
         type: [DocumentPicker.types.allFiles],
@@ -153,14 +208,17 @@ const ProfileScreen = () => {
       if (!res[0].type || typeof res[0].type !== 'string') {
         throw new Error('Invalid file type');
       }
-  
-      setAadharFileUri(uri);
-      Alert.alert('Aadhar card uploaded successfully!');
+      console.log("File URI:", uri); // Log the URI
+      setAadharFileUri({ "URL":uri,"isFile":true });
+      setShowPdfContent(true); // Show PDF content after upload
+      Alert.alert('File uploaded successfully!');
     } catch (error) {
-      console.error('Error uploading Aadhar card:', error);
-      Alert.alert('Error uploading Aadhar card. Please try again.');
+      console.error('Error uploading file:', error);
+      Alert.alert('Error uploading file. Please try again.');
     }
   };
+
+ 
 
   const uploadDrivingLicense = async () => {
     try {
@@ -174,7 +232,7 @@ const ProfileScreen = () => {
         throw new Error('Invalid file type');
       }
   
-      setDrivingLicenseFileUri(uri);
+      setDrivingLicenseFileUri({"URL":uri,"isFile":true});
       Alert.alert('Driving License uploaded successfully!');
     } catch (error) {
       console.error('Error uploading Driving License:', error);
@@ -251,13 +309,13 @@ const ProfileScreen = () => {
     }
   };
   
-  const handleFileUpload = async (documentType) => {
+  const handleFileUpload = async (documentType,type) => {
     switch (documentType) {
       case 'aadhar':
-        await uploadAadharCard();
+        await uploadAadharCard(type);
         break;
         case 'drivingLicense':
-          await uploadDrivingLicense();
+          await uploadDrivingLicense(type);
           break;
           case 'rccard':
             await uploadRCCard();
@@ -282,32 +340,59 @@ const ProfileScreen = () => {
     return uriParts[uriParts.length - 1].toUpperCase(); // Extract the last part after the dot
   };
 
-  const handleTakePhoto = (documentType) => {
-  const options = {
-    mediaType: 'photo',
-    maxWidth: 800,
-    maxHeight: 800,
-    quality: 1,
+  const handleTakeselfie = () => {
+    const options = {
+      mediaType: 'photo',
+      maxWidth: 800,
+      maxHeight: 800,
+      quality: 1,
+    };
+
+    setIsCameraActive(true);
+
+    launchCamera(options, (response) => {
+      setIsCameraActive(false);
+
+      if (response.didCancel) {
+        console.log('User cancelled camera picker');
+      } else if (response.error) {
+        console.log('ImagePicker Error:', response.error);
+      } else {
+        if (response.assets && response.assets.length > 0) {
+          const capturedPhotoUri = response.assets[0].uri;
+          console.log('Photo URI:', capturedPhotoUri);
+          setSelfiePhotoUri(capturedPhotoUri); // Setting state for selfie photo
+        }
+      }
+    });
   };
 
-  setIsCameraActive(true);
-
-  launchCamera(options, (response) => {
-    setIsCameraActive(false);
-
-    if (response.didCancel) {
-      console.log('User cancelled camera picker');
-    } else if (response.error) {
-      console.log('ImagePicker Error:', response.error);
-    } else {
-      if (response.assets && response.assets.length > 0) {
-        const capturedPhotoUri = response.assets[0].uri;
-        console.log('Photo URI:', capturedPhotoUri);
+  const handleTakePhoto = (documentType) => {
+    const options = {
+      mediaType: 'photo',
+      maxWidth: 800,
+      maxHeight: 800,
+      quality: 1,
+    };
+  
+    setIsCameraActive(true);
+  
+    launchCamera(options, (response) => {
+      setIsCameraActive(false);
+  
+      if (response.didCancel) {
+        console.log('User cancelled camera picker');
+      } else if (response.error) {
+        console.log('ImagePicker Error:', response.error);
+      } else {
+        if (response.assets && response.assets.length > 0) {
+          const capturedPhotoUri = response.assets[0].uri;
+          console.log('Photo URI:', capturedPhotoUri);
 
         // Use the documentType to set the corresponding state
         switch (documentType) {
           case 'aadhar':
-            setAadharPhotoUri(capturedPhotoUri);
+            setAadharPhotoUri({"URI":capturedPhotoUri,"isFile":false});
             break;
           case 'drivingLicense':
             setDrivingLicensePhotoUri(capturedPhotoUri);
@@ -327,6 +412,7 @@ const ProfileScreen = () => {
               case 'back':
                 setBackPhotoUri(capturedPhotoUri);
                 break;
+                
           default:
             console.error('Unknown document type:', documentType);
         }
@@ -429,7 +515,7 @@ const handleClosePhotoFB = (documentType) => {
   // };
 
 
-  console.log('Rendering with Photo URI:', photoUri);
+  // console.log('Rendering with Photo URI:', photoUri);
 
   const handleAadharPress = () => {
     // Add your logic here for handling the press event for the "Aadhar card" button
@@ -541,34 +627,23 @@ setAddressError(''); // Clear the error when the user starts typing
     <View>
     <View style={styles.cameraCard}>
       <View style={styles.camera}>
-        <TouchableOpacity onPress={handleTakePhoto} style={{ padding: 10, borderRadius: 5 }}>
+        <TouchableOpacity onPress={handleTakeselfie} style={styles.cameraButton}>
           <Icon name="camera" size={34} color="#00c49b" />
         </TouchableOpacity>
-        <Text style={styles.cameraHeading}>Take a Self<Text style={{ color: 'red' }}>*</Text></Text>
+        <Text style={styles.cameraHeading}>Take a Selfie<Text style={{ color: 'red' }}>*</Text></Text>
       </View>
+
+      {/* Display the selfie preview if available */}
+      {selfiePhotoUri && (
+        <View style={{ marginTop: 10 }}>
+          <Image source={{ uri: selfiePhotoUri }} style={{ width: 100, height: 100 }} />
+        </View>
+      )}
 
       {/* Show the circular masked layout while the camera is active */}
       {isCameraActive && (
-        <MaskedView
-          style={styles.maskLayout}
-          maskElement={
-            <Svg height="100%" width="100%" viewBox="0 0 100 100">
-              <Circle cx="50" cy="50" r="50" fill="white" />
-            </Svg>
-          }
-        >
-          <View style={styles.cameraPreview} />
-        </MaskedView>
-      )}
-
-      {/* Display the preview if a selfie is captured */}
-      {photoUri && (
-        <View style={{ marginTop: 10 }}>
-          {/* Image */}
-          <Image
-            source={{ uri: photoUri }}
-            style={{ width: 100, height: 100 }}
-          />
+        <View style={styles.maskLayout}>
+          <Text style={{ color: 'white' }}>Camera Active</Text>
         </View>
       )}
     </View>
@@ -642,70 +717,98 @@ setAddressError(''); // Clear the error when the user starts typing
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-
     }}
   >
-   <CustomButton
-  title="Aadhar card"
-  color="transparent"
-  // onPress={() => handleOpenFile(aadharFileUri)}
-  style={{
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  }}
-/>
+    <CustomButton
+      title="Aadhar card"
+      color="transparent"
+      // onPress={() => handleOpenFile(aadharFileUri)}
+      style={{
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+      }}
+    />
   </LinearGradient>
 
-
   <View style={styles.fileContainer}>
-    {aadharFileUri && (
-      <>
-        {isImageFile(aadharFileUri) ? (
-          <Image source={{ uri: aadharFileUri }} style={styles.fileImage} />
-        ) : (
-          <TouchableOpacity onPress={() => openFile(aadharFileUri)}>
-            <Text>{getFileName(aadharFileUri)}</Text>
+      {aadharFileUri && (
+        <>
+          {aadharFileUri.isFile ? (
+            <>
+              <TouchableOpacity
+            onPress={() => setShowPdfContent(!showPdfContent)}
+            style={styles.pdfContainer}
+          >
+            <Text style={{ color: "grey", borderColor: "black", borderWidth: 0.5, width: 50, height: 150 }}>
+              {showPdfContent ? 'Hide PDF' : 'Show PDF'}
+            </Text>
           </TouchableOpacity>
-        )}
-        <TouchableOpacity onPress={() => handleCloseButton('aadhar')} style={styles.closeButton}>
-          <Icon name="close" size={10} color="#01a399" />
-        </TouchableOpacity>
-      </>
-      
-    )}
-  </View>
+              {aadharFileUri && (
+                  <Pdf
+                  source={{ uri: aadharFileUri.URL }}
+                  trustAllCerts={Platform.OS === 'android'}
+                    onLoadComplete={(numberOfPages, filePath) => {
+                      console.log(`number of pages: ${numberOfPages}`);
+                    }}
+                    onPageChanged={(page, numberOfPages) => {
+                      console.log(`current page: ${page}`);
+                    }}
+                    onError={error => {
+                      console.log(error);
+                    }}
+                    onPressLink={uri => {
+                      console.log(`Link pressed: ${uri}`);
+                    }}
+                    style={styles.pdfView}
+                  />
+                )}
+              
+            </>
+          ) : null}
+          <TouchableOpacity onPress={() => handleCloseButton('aadhar')} style={styles.closeButton}>
+            <Icon name="close" size={10} color="#01a399" />
+          </TouchableOpacity>
+        </>
+      )}
+    </View>
+  
+
   {/* Display Aadhar photo preview */}
   {aadharPhotoUri && (
-    <View style={{ marginTop: 10 }}>
+    <View style={{ marginTop: 10,marginLeft:-60 }}>
       <Image
-        source={{ uri: aadharPhotoUri }}
-        style={{ width: 50, height: 50 }}
+        source={{ uri: aadharPhotoUri.URI }}
+        style={{ width: 50, height: 50,marginRight:-30, }}
       />
-      <TouchableOpacity onPress={() => handleClosePhoto('aadhar')} style={styles.closeButtoncamera}>
-    <Icon name="close" size={10} color="#01a399" />
-  </TouchableOpacity>
+      <TouchableOpacity onPress={() => handleClosePhoto('aadhar', "photo")} style={styles.closeButtoncamera}>
+        <Icon name="close" size={10} color="#01a399" />
+      </TouchableOpacity>
     </View>
-    
   )}
- 
-  <View>
-  <TouchableOpacity onPress={() => handleFileUpload('aadhar')} style={styles.uploadButton}>
-    <Icon name="upload" size={24} color="#00c49b" />
-  </TouchableOpacity>
+
+  {/* Upload file button */}
+  
+    <View style={styles.buttonContainer}>
+      <TouchableOpacity onPress={() => handleFileUpload ('aadhar', 'upload')} style={styles.uploadButton}>
+        <Icon name="upload" size={24} color="#00c49b" />
+      </TouchableOpacity>
+    </View>
+  
+
+  {/* Camera button */}
+    <View style={styles.buttonContainer}>
+      <TouchableOpacity onPress={() => handleTakePhoto('aadhar', "photo")} style={styles.cameraButton}>
+        <Icon name="camera" size={24} color="#00c49b" />
+      </TouchableOpacity>
+    </View>
+  
 </View>
-<View>
-<TouchableOpacity onPress={() => handleTakePhoto('aadhar')} style={styles.cameraButton}>
-      <Icon name="camera" size={24} color="#00c49b" />
-    </TouchableOpacity>
-    {/* Display the preview if a photo is captured */}
-    
-  </View>
-</View>
+
 
 <View style={styles.rowContainer}>
   <LinearGradient
@@ -1321,7 +1424,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#ffffff', // White background color
     marginVertical: -20,
-    marginRight: -10, // Adjust spacing as needed
+    marginRight: -5, // Adjust spacing as needed
 
   },
   customnext:{
@@ -1351,10 +1454,10 @@ marginTop:-30,
         fontWeight: 'bold',
         marginBottom: 10,
       },
-      pdf: {
-        flex: 1,
-        width: '50%',
-      },
+      // pdf: {
+      //   flex: 1,
+      //   width: '50%',
+      // },
       errorText: {
         color: 'red',
         fontSize: 12,
@@ -1381,7 +1484,7 @@ marginTop:-30,
       closeButtoncamera: {
         position: 'absolute',
         top: -8,
-        right: -10,
+        right: -40,
       },
       maskLayout: {
         flex: 1,
@@ -1486,6 +1589,16 @@ marginTop:-30,
     backgroundColor:'#f0f5f4',
     marginTop:10,
 
+  },
+  pdfContainer: {
+    flex: 1,
+    width: '50%', // Adjust as needed
+    height: '50%', // Adjust as needed
+  },
+  pdfView: {
+    flex: 1, // or adjust according to your layout
+    width: '30%', // or adjust accordingly
+    height: '30%', // or adjust accordingly
   },
 
 });
