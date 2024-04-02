@@ -1,0 +1,71 @@
+{
+    "title_one": "Choose Location",
+    "onboarding_one_desc": "Experience the coninvenience of Furlongo, Where reliable goods vehicle booking are just a click away",
+    
+    "title_two": "Choose Your Vehicle",
+    "onboarding_two_desc": "For small packages to large shipments, furlongo caters to all your goods vehicle booking needs effortlessly!",
+    
+    "title_three": "Deliver On-Time",
+    "onboarding_three_desc":"Say Good bye to delays and uncertainties Furlongo guarantees prompt,secure and timely delivery of goods!",
+      "Get Started": "Get Started",
+
+    "welcome": "Welcome to Furlongo",
+    "ultimate_destination": "Your ultimate destination for all things.",
+    "enter_mobile": "Enter Login Mobile Number",
+    "send_otp": "Send OTP",
+    "agree_terms_conditions": "I agree with all terms and conditions",
+     "Login":"Login",
+     "no_account":"Don't have an account?",
+     "Register_now":"Register now",
+"Select":"Select",
+
+
+     "Terms_Conditions":"Terms and Conditions",
+     "Global_Positioning":"Global Positioning System (GPS): Helps drivers find the right direction.",
+     "Notifications": "Notifications: Keeps drivers up-to-date on what's happening on their mobile device.",
+     "Navigation": "Navigation: Provides real-time information about routes and traffic.",
+     "Daily_summary": "Daily summary report: Provides insights into a driver's working day.",
+     "Live_location": "Live location sharing: Helps riders anticipate a driver's arrival time and traffic.",
+     "Trip_history": "Trip history: Tracks a vehicle's trips and helps identify unauthorized trips.",
+     "Route_optimization":"Route optimization: Helps keep drivers organized and reach the correct destination.",
+     "Close":"Close",
+     
+
+
+    "Welcome To Register": "Welcome To Register",
+    "Register By": "Register By",
+    "Self ": "Self ",
+    "DR": "Driver Reference",
+    "Enter Your Mobile Number": "Enter Your Mobile Number",
+    "RD_id/D.no":"Reference driver id / Mobile number",
+
+    "Enter Self Driver ID": "Enter Self Driver ID",
+    "Enter Refer Driver ID": "Enter Refer Driver ID",
+    "send_otpp": "Send OTP",
+
+     
+        "enter_code": "Enter the OTP",
+        "enter_code_description": "Please Enter 4-digit OTP sent to your mobile number",
+        "verify_otp": "Verify OTP",
+        "didnt_receive_code": "Didn't receive the verification code?",
+      
+        "language": "Language Selection",
+        "home": "Home",
+        "orders": "Orders",
+        "notification": "Notification",
+        "help_center": "Help Center",
+        "settings": "Settings",
+        "profile": "Profile",
+        "finding_driver": "Finding a Driver",
+        "refer_friend": "Refer a Friend",
+        "review": "Review",
+        "arrive": "Arrive",
+        "onboarding": "Onboarding",
+        "login": "Login",
+        "verify_otpp": "Verify OTP",
+        "resend_otp": "Resend OTP",
+
+        "sign_out": "Sign Out"
+
+  }
+  

@@ -962,7 +962,7 @@ const clearTextInput = () => {
          
   
           renderLeftButton={() => (
-            <Image source={require('../assets/Location.png')}  style={styles.icons} />
+            <Image source={require('../assets/locate.png')}  style={styles.icons} />
           )}
         />
   
